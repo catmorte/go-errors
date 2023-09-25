@@ -3,107 +3,71 @@ package wrap
 import "sync"
 
 type runResult[T any] struct {
+	result Result[T]
+
 	sync.Mutex
 	value T
 	err   error
 
 	valueCh chan T
 	errCh   chan error
+
+	resultCh chan Result[T]
 }
 
-func (r *runResult[T]) waitResult() (T, error) {
-	select {
-	case v, ok := <-r.valueCh:
-		if ok {
-			r.value = v
-			r.closeChannels()
-		}
-	case err, ok := <-r.errCh:
-		if ok {
-			r.err = err
-			r.closeChannels()
-		}
+func (r *runResult[T]) waitResult() Result[T] {
+	res, ok := <-r.resultCh
+	if ok {
+		r.result = res
+		close(r.resultCh)
 	}
-	return r.value, r.err
-}
-
-func (r *runResult[T]) closeChannels() {
-	close(r.valueCh)
-	close(r.errCh)
+	return r.result
 }
 
 // ErrorOrNil implements Result.
 func (r *runResult[T]) ErrorOrNil() error {
-	_, err := r.waitResult()
-	return err
+	return r.waitResult().ErrorOrNil()
 }
 
 // Flat implements Result.
 func (r *runResult[T]) Flat(onOK func(T), onError func(error)) Result[T] {
-	v, err := r.waitResult()
-	if err != nil {
-		onError(err)
-		return r
-	}
-	onOK(v)
-	return r
+	return r.waitResult().Flat(onOK, onError)
 }
 
 // GetOrDefault implements Result.
 func (r *runResult[T]) GetOrDefault(defaultValue T) T {
-	v, err := r.waitResult()
-	if err != nil {
-		return defaultValue
-	}
-	return v
+	return r.waitResult().GetOrDefault(defaultValue)
 }
 
 // GetOrNil implements Result.
 func (r *runResult[T]) GetOrNil() *T {
-	v, _ := r.waitResult()
-	return &v
+	return r.waitResult().GetOrNil()
 }
 
 // IfError implements Result.
 func (r *runResult[T]) IfError(onError func(error)) Result[T] {
-	_, err := r.waitResult()
-	if err != nil {
-		onError(err)
-	}
-	return r
+	return r.waitResult().IfError(onError)
 }
 
 // IfOK implements Result.
-func (r *runResult[T]) IfOK(onOk func(T)) Result[T] {
-	v, err := r.waitResult()
-	if err == nil {
-		onOk(v)
-	}
-	return r
+func (r *runResult[T]) IfOK(onOK func(T)) Result[T] {
+	return r.waitResult().IfOK(onOK)
 }
 
 // IsError implements Result.
 func (r *runResult[T]) IsError() bool {
-	_, err := r.waitResult()
-	return err != nil
+	return r.waitResult().IsError()
 }
 
 // IsOK implements Result.
 func (r *runResult[T]) IsOK() bool {
-	_, err := r.waitResult()
-	return err == nil
+	return r.waitResult().IsOK()
 }
 
-func Async[T any](fn func() (T, error)) Result[T] {
-	valueCh := make(chan T)
-	errCh := make(chan error)
+func Async[T any](fn func() Result[T]) Result[T] {
+	resultCh := make(chan Result[T])
 	go func() {
-		val, err := fn()
-		if err != nil {
-			errCh <- err
-			return
-		}
-		valueCh <- val
+		resultCh <- fn()
 	}()
-	return &runResult[T]{valueCh: valueCh, errCh: errCh}
+	return &runResult[T]{resultCh: resultCh}
 }
