@@ -8,7 +8,7 @@ func (ok[T]) ErrorOrNil() error {
 	return nil
 }
 
-func (s ok[T]) Flat(onOK func(T), onError func(error)) Result[T] {
+func (s ok[T]) Flat(onOK func(T), onError func(error)) Output[T] {
 	onOK(s.v)
 	return s
 }
@@ -29,16 +29,16 @@ func (ok[T]) IsOK() bool {
 	return true
 }
 
-func (s ok[T]) IfError(onError func(error)) Result[T] {
+func (s ok[T]) IfError(onError func(error)) Output[T] {
 	return s
 }
 
-func (s ok[T]) IfOK(onOK func(T)) Result[T] {
+func (s ok[T]) IfOK(onOK func(T)) Output[T] {
 	onOK(s.v)
 	return s
 }
 
-func OK[T any](value T) Result[T] {
+func OK[T any](value T) Output[T] {
 	output := new(ok[T])
 	output.v = value
 
