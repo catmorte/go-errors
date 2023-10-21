@@ -1,6 +1,8 @@
-package errors
+package tcatch
 
-import "errors"
+import (
+	"errors"
+)
 
 func empty(e error)            {}
 func selfReturn(e error) error { return e }
@@ -9,15 +11,19 @@ func selfPanic(e error) error  { panic(e) }
 type (
 	tryFunc      func() error
 	tryErrorFunc func(e error)
-	tryCatcher   struct {
+	errFunc      struct {
+		err error
+		f   tryErrorFunc
+	}
+	tryCatcher struct {
 		f        tryFunc
-		catchers map[error]tryErrorFunc
+		catchers []errFunc
 		finally  tryErrorFunc
 	}
 )
 
 func (t *tryCatcher) Catch(e error, f tryErrorFunc) *tryCatcher {
-	t.catchers[e] = f
+	t.catchers = append(t.catchers, errFunc{err: e, f: f})
 	return t
 }
 
@@ -42,14 +48,15 @@ func (t tryCatcher) Handle(handle func(e error) error) error {
 func Try(f tryFunc) *tryCatcher {
 	t := &tryCatcher{
 		f:        f,
-		catchers: make(map[error]tryErrorFunc),
+		catchers: make([]errFunc, 0),
 	}
 	return t
 }
 
 func (t tryCatcher) catch(err error) bool {
-	for k := range t.catchers {
-		if errors.Is(err, k) {
+	for _, ef := range t.catchers {
+		if errors.Is(ef.err, err) || errors.Is(err, ef.err) {
+			ef.f(err)
 			return true
 		}
 	}
