@@ -1,14 +1,18 @@
 package wrap
 
+type ErrorContainer interface {
+	ErrorOrNil() error
+	IsOK() bool
+	IsError() bool
+}
+
 type Void struct{}
 
 type Output[T any] interface {
-	IsOK() bool
-	IsError() bool
+	ErrorContainer
 
 	GetOrDefault(defaultValue T) T
 	GetOrNil() *T
-	ErrorOrNil() error
 
 	IfOK(onOk func(T)) Output[T]
 	IfError(onError func(error)) Output[T]
