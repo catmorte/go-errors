@@ -25,9 +25,9 @@ func Wrap[T any](val T, err error) Output[T] {
 	return OK[T](val)
 }
 
-func WrapVoid(err error) Output[struct{}] {
+func WrapVoid(err error) Output[Void] {
 	if err != nil {
-		return Err[struct{}](err)
+		return Err[Void](err)
 	}
-	return OK[struct{}](struct{}{})
+	return OK[Void](Void{})
 }

@@ -1,5 +1,7 @@
 package wrap
 
+type Void struct{}
+
 type Output[T any] interface {
 	IsOK() bool
 	IsError() bool
