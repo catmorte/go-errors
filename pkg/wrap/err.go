@@ -44,3 +44,8 @@ func Err[T any](e error) Output[T] {
 
 	return *output
 }
+
+func (e err[T]) Unwrap() (T, error) {
+	var zeroVal T
+	return zeroVal, e.err
+}

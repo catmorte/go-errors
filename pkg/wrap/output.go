@@ -11,4 +11,6 @@ type Output[T any] interface {
 	IfOK(onOk func(T)) Output[T]
 	IfError(onError func(error)) Output[T]
 	Flat(onOK func(T), onError func(error)) Output[T]
+
+	Unwrap() (T, error)
 }

@@ -44,3 +44,7 @@ func OK[T any](value T) Output[T] {
 
 	return *output
 }
+
+func (s ok[T]) Unwrap() (T, error) {
+	return s.v, nil
+}

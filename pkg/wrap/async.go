@@ -71,3 +71,8 @@ func Async[T any](fn func() Output[T]) Output[T] {
 	}()
 	return &asyncOutput[T]{resultCh: resultCh}
 }
+
+// Unwrap implements Result.
+func (r *asyncOutput[T]) Unwrap() (T, error) {
+	return r.waitResult().Unwrap()
+}
