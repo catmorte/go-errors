@@ -31,3 +31,14 @@ func WrapVoid(err error) Output[Void] {
 	}
 	return OK[Void](Void{})
 }
+
+func ErrProof[T interface {
+	ErrorOrNil() error
+}](r ...T) Output[Void] {
+	for _, v := range r {
+		if err := v.ErrorOrNil(); err != nil {
+			return Err[Void](err)
+		}
+	}
+	return OK(Void{})
+}
